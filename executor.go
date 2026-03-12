@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ocelot-cloud/taskrunner/platform"
+	"github.com/quollix/taskrunner/platform"
 )
 
 func (t *TaskRunner) KillProcesses(processSubStrings []string) {

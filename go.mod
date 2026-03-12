@@ -1,4 +1,4 @@
-module github.com/ocelot-cloud/taskrunner
+module github.com/quollix/taskrunner
 
 go 1.24.1
 

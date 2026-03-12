@@ -7,7 +7,7 @@ Note: API is not stable yet.
 ### Installation
 
 ```bash
-go get github.com/ocelot-cloud/taskrunner
+go get github.com/quollix/taskrunner
 ```
 
 ### Usage Example
