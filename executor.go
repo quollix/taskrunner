@@ -35,7 +35,7 @@ func (t *TaskRunner) ExecuteInDir(dir string, commandStr string, envs ...string)
 
 	elapsedTimeSummary := fmt.Sprintf("Time taken: %s seconds.", elapsedStr)
 	if err != nil {
-		t.Log.Error(" => Command failed. %s. Error: %v", elapsedTimeSummary, err)
+		t.Log.Error(" => Command failed in directory '%s' running '%s'. %s. Error: %v", shortDir, commandStr, elapsedTimeSummary, err)
 		t.ExitWithError()
 	} else {
 		t.Log.Info(" => Command successful. %s", elapsedTimeSummary)
