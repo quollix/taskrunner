@@ -2,8 +2,8 @@ package taskrunner
 
 import (
 	"fmt"
-	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 type logger interface {
@@ -19,16 +19,22 @@ const (
 	reset    = "\033[0m"
 )
 
+const logPrefix = "taskrunner"
+
 type consoleLogger struct{}
 
 func (consoleLogger) Info(f string, a ...any) {
-	file, line := callerInfo()
-	fmt.Printf(green+"[%s:%d] "+f+reset+"\n", append([]any{file, line}, a...)...)
+	fmt.Printf(green+"[%s] "+f+reset+"\n", append([]any{logPrefix}, a...)...)
 }
 
 func (consoleLogger) Error(f string, a ...any) {
-	file, line := callerInfo()
-	fmt.Printf(red+"[%s:%d] "+f+reset+"\n", append([]any{file, line}, a...)...)
+	message := fmt.Sprintf(f, a...)
+	fmt.Printf(red+"[%s] %s"+reset+"\n", logPrefix, message)
+	stack := stackTrace(3)
+	if stack == "" {
+		return
+	}
+	fmt.Printf(red+"[%s] Stack trace:\n%s"+reset, logPrefix, stack)
 }
 
 func (consoleLogger) TaskDescription(f string, a ...any) {
@@ -36,14 +42,22 @@ func (consoleLogger) TaskDescription(f string, a ...any) {
 	fmt.Printf("\n"+blueBold+"==== %s ===="+reset+"\n\n", title)
 }
 
-func callerInfo() (string, int) {
-	// skip 2 = skip callerInfo + Info/Error → return actual user code line
-	_, file, line, ok := runtime.Caller(2)
-	if !ok {
-		return "???", 0
+func stackTrace(skip int) string {
+	pcs := make([]uintptr, 32)
+	n := runtime.Callers(skip, pcs)
+	if n == 0 {
+		return ""
 	}
 
-	file = filepath.Base(file)
+	var b strings.Builder
+	frames := runtime.CallersFrames(pcs[:n])
+	for {
+		frame, more := frames.Next()
+		b.WriteString(fmt.Sprintf("  %s\n    %s:%d\n", frame.Function, frame.File, frame.Line))
+		if !more {
+			break
+		}
+	}
 
-	return file, line
+	return b.String()
 }
