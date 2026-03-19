@@ -1,27 +1,15 @@
 package taskrunner
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 	"time"
 )
-
-func (t *TaskRunner) KillProcesses(processSubStrings []string) {
-	for _, process := range processSubStrings {
-		var cmd *exec.Cmd
-		if runtime.GOOS == "windows" {
-			cmd = exec.Command("taskkill", "/F", "/IM", process+".exe", "/T")
-		} else {
-			cmd = exec.Command("pkill", "-f", process)
-		}
-		_ = cmd.Run()
-	}
-}
 
 func (c *Command) Dir(dir string) *Command {
 	c.dir = dir
@@ -33,8 +21,9 @@ func (c *Command) Env(key, value string) *Command {
 	return c
 }
 
-func (c *Command) AsDaemon() *Command {
+func (c *Command) AsDaemon(name string) *Command {
 	c.asDaemon = true
+	c.name = name
 	return c
 }
 
@@ -71,10 +60,7 @@ func (c *Command) runForeground(cmd *exec.Cmd) {
 	c.taskRunner.Log.Info("in directory '%s', executing '%s'", shortDir, commandStr)
 
 	var stdoutBuf, stderrBuf bytes.Buffer
-	stdoutMulti := io.MultiWriter(os.Stdout, &stdoutBuf)
-	stderrMulti := io.MultiWriter(os.Stderr, &stderrBuf)
-	cmd.Stdout = stdoutMulti
-	cmd.Stderr = stderrMulti
+	c.attachOutput(cmd, logPrefix, green, &stdoutBuf, &stderrBuf)
 
 	startTime := time.Now()
 	err := cmd.Run()
@@ -87,5 +73,31 @@ func (c *Command) runForeground(cmd *exec.Cmd) {
 		c.taskRunner.ExitWithError()
 	} else {
 		c.taskRunner.Log.Info(" => Command successful. %s", elapsedTimeSummary)
+	}
+}
+
+func (c *Command) attachOutput(cmd *exec.Cmd, name, color string, stdoutBuf, stderrBuf io.Writer) {
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		c.taskRunner.Log.Error("failed to attach stdout pipe for '%s': %v", formatCommand(cmd), err)
+		c.taskRunner.ExitWithError()
+		return
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		c.taskRunner.Log.Error("failed to attach stderr pipe for '%s': %v", formatCommand(cmd), err)
+		c.taskRunner.ExitWithError()
+		return
+	}
+
+	go streamOutput(stdoutPipe, io.MultiWriter(os.Stdout, stdoutBuf), name, color)
+	go streamOutput(stderrPipe, io.MultiWriter(os.Stderr, stderrBuf), name, color)
+}
+
+func streamOutput(reader io.Reader, raw io.Writer, name, color string) {
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		_, _ = fmt.Fprintf(raw, "%s[%s] %s%s\n", color, name, line, reset)
 	}
 }

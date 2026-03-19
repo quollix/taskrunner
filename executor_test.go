@@ -57,11 +57,11 @@ func TestDaemon(t *testing.T) {
 	assert.Equal(t, 0, len(tr.daemons))
 	tr.daemonMu.Unlock()
 
-	tr.Cmd().AsDaemon().Run("sleep 100")
+	tr.Cmd().AsDaemon("sleepy").Run("sleep 100")
 	assert.Eventually(t, func() bool {
 		tr.daemonMu.Lock()
 		defer tr.daemonMu.Unlock()
-		return len(tr.daemons) == 1
+		return len(tr.daemons) == 1 && tr.daemons[0].name == "sleepy"
 	}, time.Second, 10*time.Millisecond)
 
 	tr.Cleanup()

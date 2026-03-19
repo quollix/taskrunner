@@ -13,10 +13,18 @@ type logger interface {
 }
 
 const (
-	green    = "\033[32m"
-	red      = "\033[31m"
-	blueBold = "\033[1;34m"
-	reset    = "\033[0m"
+	green      = "\033[32m"
+	red        = "\033[31m"
+	blueBold   = "\033[1;34m"
+	cyan       = "\033[36m"
+	yellow     = "\033[33m"
+	blue       = "\033[34m"
+	magenta    = "\033[35m"
+	brightCyan = "\033[96m"
+	brightBlue = "\033[94m"
+	brightYel  = "\033[93m"
+	white      = "\033[97m"
+	reset      = "\033[0m"
 )
 
 const logPrefix = "taskrunner"

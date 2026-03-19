@@ -26,11 +26,11 @@ func TestFrontend() {
     tr.Log.Info("Testing Integrated Components")
     defer tr.Cleanup() // shuts down the daemon processes at the end
     tr.Cmd().Dir(backendDir).Run("go build")
-    tr.Cmd().Dir(backendDir).AsDaemon().Run("./backend")
+    tr.Cmd().Dir(backendDir).AsDaemon("backend").Run("./backend")
     tr.WaitUntilPortIsReady("8080")
 
     tr.Cmd().Dir(frontendDir).Run("npm install")
-    tr.Cmd().Dir(frontendDir).Env("VITE_APP_PROFILE", "TEST").AsDaemon().Run("npm run serve")
+    tr.Cmd().Dir(frontendDir).Env("VITE_APP_PROFILE", "TEST").AsDaemon("frontend").Run("npm run serve")
     tr.WaitForWebPageToBeReady("http://localhost:8081/")
     tr.Cmd().Dir(acceptanceTestsDir).Env("CYPRESS_PROFILE", "TEST").Run(cypressCommand)
 }

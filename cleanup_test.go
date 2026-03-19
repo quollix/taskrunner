@@ -12,7 +12,7 @@ import (
 )
 
 func TestCleanup(t *testing.T) {
-	tr.Cmd().AsDaemon().Run("sleep 10")
+	tr.Cmd().AsDaemon("cleanup-test").Run("sleep 10")
 	tr.Cleanup()
 	assertThatNoProcessesSurvived([]string{"sleep 10"})
 }

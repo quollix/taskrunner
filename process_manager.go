@@ -1,6 +1,7 @@
 package taskrunner
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,8 +11,15 @@ import (
 )
 
 func (c *Command) startDaemon(cmd *exec.Cmd) {
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if c.name == "" {
+		c.taskRunner.Log.Error("daemon name is required")
+		c.taskRunner.ExitWithError()
+		return
+	}
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	color := c.taskRunner.nextColor()
+	c.attachOutput(cmd, c.name, color, &stdoutBuf, &stderrBuf)
 
 	err := cmd.Start()
 
@@ -27,8 +35,8 @@ func (c *Command) startDaemon(cmd *exec.Cmd) {
 		return
 	}
 
-	c.taskRunner.registerDaemon(cmd)
-	c.taskRunner.Log.Info("started daemon with ID '%v' using command '%s'", cmd.Process.Pid, formatCommand(cmd))
+	c.taskRunner.registerDaemon(cmd, c.name, color)
+	c.taskRunner.Log.Info("started daemon '%s' with ID '%v' using command '%s'", c.name, cmd.Process.Pid, formatCommand(cmd))
 
 	go func() {
 		commandStr := formatCommand(cmd)
@@ -90,13 +98,24 @@ func (t *TaskRunner) killDaemonProcessesCreateDuringThisRun() {
 	}
 }
 
-func (t *TaskRunner) registerDaemon(cmd *exec.Cmd) {
+func (t *TaskRunner) registerDaemon(cmd *exec.Cmd, name, color string) {
 	t.daemonMu.Lock()
 	defer t.daemonMu.Unlock()
 	t.daemons = append(t.daemons, &daemonProcess{
 		cmd:     cmd,
 		command: formatCommand(cmd),
+		name:    name,
+		color:   color,
 	})
+}
+
+func (t *TaskRunner) nextColor() string {
+	colors := []string{cyan, yellow, blue, magenta, brightCyan, brightBlue, brightYel, white}
+	t.daemonMu.Lock()
+	defer t.daemonMu.Unlock()
+	color := colors[t.nextDaemonColor%len(colors)]
+	t.nextDaemonColor++
+	return color
 }
 
 func formatCommand(cmd *exec.Cmd) string {

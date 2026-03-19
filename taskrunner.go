@@ -24,8 +24,9 @@ type TaskRunner struct {
 	Config *Config
 	Log    logger
 
-	daemonMu sync.Mutex
-	daemons  []*daemonProcess
+	daemonMu        sync.Mutex
+	daemons         []*daemonProcess
+	nextDaemonColor int
 }
 
 type Command struct {
@@ -33,11 +34,14 @@ type Command struct {
 	dir        string
 	envs       []string
 	asDaemon   bool
+	name       string
 }
 
 type daemonProcess struct {
 	cmd     *exec.Cmd
 	command string
+	name    string
+	color   string
 }
 
 type Config struct {
