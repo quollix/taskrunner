@@ -33,7 +33,7 @@ func TestDirCreationAndDeletion(t *testing.T) {
 	defer tr.Remove(tmpDir)
 	tr.MakeDir(tmpDir)
 	assert.True(t, checkIfExists(tmpDir))
-	
+
 	createFile(t, tmpDir+"/test.txt")
 	assert.True(t, checkIfExists(tmpDir+"/test.txt"))
 	tr.Remove(tmpDir)
@@ -53,21 +53,15 @@ func checkIfExists(path string) bool {
 }
 
 func TestDaemon(t *testing.T) {
-	tr.daemonMu.Lock()
 	assert.Equal(t, 0, len(tr.daemons))
-	tr.daemonMu.Unlock()
 
 	tr.Cmd().AsDaemon("sleepy").Run("sleep 100")
 	assert.Eventually(t, func() bool {
-		tr.daemonMu.Lock()
-		defer tr.daemonMu.Unlock()
 		return len(tr.daemons) == 1 && tr.daemons[0].name == "sleepy"
 	}, time.Second, 10*time.Millisecond)
 
 	tr.Cleanup()
 	assert.Eventually(t, func() bool {
-		tr.daemonMu.Lock()
-		defer tr.daemonMu.Unlock()
 		return len(tr.daemons) == 0
 	}, time.Second, 10*time.Millisecond)
 }
