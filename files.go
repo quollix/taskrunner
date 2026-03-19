@@ -23,11 +23,10 @@ func (f fileOps) Move(format string, args ...any) *pendingFileTarget {
 	}
 }
 
-func (f fileOps) Rename(format string, args ...any) *pendingFileTarget {
-	return &pendingFileTarget{
+func (f fileOps) Rename(format string, args ...any) *pendingRenameTarget {
+	return &pendingRenameTarget{
 		taskRunner: f.taskRunner,
 		srcPath:    resolvePath(format, args...),
-		action:     "rename",
 	}
 }
 
@@ -57,6 +56,11 @@ func (p *pendingFileTarget) To(format string, args ...any) {
 	default:
 		p.taskRunner.Log.Error("unknown file action '%s'", p.action)
 	}
+}
+
+func (p *pendingRenameTarget) To(format string, args ...any) {
+	newName := fmt.Sprintf(format, args...)
+	p.taskRunner.rename(p.srcPath, newName)
 }
 
 func resolvePath(format string, args ...any) string {
@@ -186,14 +190,14 @@ func (t *TaskRunner) move(srcPath, destPath string) {
 	}
 }
 
-func (t *TaskRunner) rename(srcPath, destPath string) {
+func (t *TaskRunner) rename(srcPath, newName string) {
 	srcPath = filepath.Clean(srcPath)
-	destPath = filepath.Clean(destPath)
-
-	if err := os.MkdirAll(filepath.Dir(destPath), 0700); err != nil {
-		t.Log.Error("error creating directory %s: %v", filepath.Dir(destPath), err)
+	newName = filepath.Clean(newName)
+	if newName == "." || newName == ".." || filepath.Base(newName) != newName {
+		t.Log.Error("invalid rename target %q: expected a name without path separators", newName)
 		return
 	}
+	destPath := filepath.Join(filepath.Dir(srcPath), newName)
 	if err := os.Rename(srcPath, destPath); err != nil {
 		t.Log.Error("error renaming %s to %s: %v", srcPath, destPath, err)
 	}

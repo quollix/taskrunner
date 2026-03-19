@@ -80,7 +80,7 @@ func TestRenameDir(t *testing.T) {
 	assertExists(t, filepath.Join(sub, "y.txt"))
 
 	newSub := filepath.Join(tmpDir, "renamed")
-	tr.File.Rename("%s", sub).To("%s", newSub)
+	tr.File.Rename("%s", sub).To("%s", "renamed")
 
 	assertNotExists(t, sub)
 	assertExists(t, newSub)
@@ -123,9 +123,20 @@ func TestFileRename(t *testing.T) {
 	dst := filepath.Join(tmpDir, "b.txt")
 	srcMode := mustMode(t, src)
 
-	tr.File.Rename("%s", src).To("%s", dst)
+	tr.File.Rename("%s", src).To("%s", "b.txt")
 
 	assertNotExists(t, src)
 	assertExists(t, dst)
 	assert.Equal(t, srcMode, mustMode(t, dst))
+}
+
+func TestFileRenameRejectsPath(t *testing.T) {
+	tr.File.Remove(tmpDir)
+	defer tr.File.Remove(tmpDir)
+	src := setupDirWithFile(t, tmpDir, "a.txt")
+
+	tr.File.Rename("%s", src).To("%s", filepath.Join("nested", "b.txt"))
+
+	assertExists(t, src)
+	assertNotExists(t, filepath.Join(tmpDir, "nested", "b.txt"))
 }

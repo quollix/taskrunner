@@ -56,6 +56,11 @@ type pendingFileTarget struct {
 	action     string
 }
 
+type pendingRenameTarget struct {
+	taskRunner *TaskRunner
+	srcPath    string
+}
+
 type Config struct {
 	CleanupOnFailure            bool
 	CleanupFunc                 func()
