@@ -2,16 +2,15 @@ package taskrunner
 
 import (
 	"fmt"
-	"github.com/quollix/taskrunner/platform"
 	"os"
 	"os/exec"
 	"os/signal"
 	"syscall"
+
+	"github.com/quollix/taskrunner/platform"
 )
 
-func (t *TaskRunner) StartDaemon(dir, commandStr string, envs ...string) {
-	cmd := platform.BuildCommand(dir, commandStr)
-	appendEnvsToCommand(cmd, envs)
+func (c *Command) startDaemon(cmd *exec.Cmd, commandStr string) {
 	platform.SetProcessGroup(cmd)
 
 	cmd.Stdout = os.Stdout
@@ -20,30 +19,30 @@ func (t *TaskRunner) StartDaemon(dir, commandStr string, envs ...string) {
 	err := cmd.Start()
 
 	if cmd.Process == nil {
-		t.Log.Error("error - the process was not able to start properly.")
-		t.ExitWithError()
+		c.taskRunner.Log.Error("error - the process was not able to start properly.")
+		c.taskRunner.ExitWithError()
 		return
 	}
 
-	t.Config.idsOfDaemonProcessesCreated = append(t.Config.idsOfDaemonProcessesCreated, cmd.Process.Pid)
+	c.taskRunner.Config.idsOfDaemonProcessesCreated = append(c.taskRunner.Config.idsOfDaemonProcessesCreated, cmd.Process.Pid)
 
 	if err != nil {
-		t.Log.Error("Command: '%s' -> failed with error: %v", commandStr, err)
-		t.ExitWithError()
+		c.taskRunner.Log.Error("Command: '%s' -> failed with error: %v", commandStr, err)
+		c.taskRunner.ExitWithError()
 		return
 	}
 
-	t.Log.Info("started daemon with ID '%v' using command '%s'", cmd.Process.Pid, commandStr)
+	c.taskRunner.Log.Info("started daemon with ID '%v' using command '%s'", cmd.Process.Pid, commandStr)
 
 	go func() {
 		if err = cmd.Wait(); err != nil {
 			if err.Error() == "signal: killed" {
-				t.Log.Info("command: '%s' -> stopped through cleanup process killing", commandStr)
+				c.taskRunner.Log.Info("command: '%s' -> stopped through cleanup process killing", commandStr)
 			} else {
-				t.Log.Error("command: '%s' -> stopped with error: %v", commandStr, err)
+				c.taskRunner.Log.Error("command: '%s' -> stopped with error: %v", commandStr, err)
 			}
 		} else {
-			t.Log.Info("command: '%s' -> stopped through termination", commandStr)
+			c.taskRunner.Log.Info("command: '%s' -> stopped through termination", commandStr)
 		}
 	}()
 }

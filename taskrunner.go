@@ -24,12 +24,27 @@ type TaskRunner struct {
 	Log    logger
 }
 
+type Command struct {
+	taskRunner *TaskRunner
+	dir        string
+	envs       []string
+	asDaemon   bool
+}
+
 type Config struct {
 	CleanupOnFailure            bool
 	CleanupFunc                 func()
 	DefaultEnvironmentVariables []string
 	idsOfDaemonProcessesCreated []int
 	parentDir                   string
+}
+
+func (t *TaskRunner) Cmd() *Command {
+	return &Command{
+		taskRunner: t,
+		dir:        ".",
+		envs:       []string{},
+	}
 }
 
 func getParentDir() string {

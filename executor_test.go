@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCommandSuccessful(t *testing.T) {
-	tr.ExecuteInDir(sampleTestDir, "go test success_test.go")
+	tr.Cmd().Dir(sampleTestDir).Run("go test success_test.go")
 }
 
 func TestDirCreationAndDeletion(t *testing.T) {
@@ -55,16 +55,16 @@ func checkIfExists(path string) bool {
 func TestDaemon(t *testing.T) {
 	assert.Equal(t, 0, len(tr.Config.idsOfDaemonProcessesCreated))
 
-	tr.StartDaemon(".", "sleep 100")
+	tr.Cmd().AsDaemon().Run("sleep 100")
 	assert.Equal(t, 1, len(tr.Config.idsOfDaemonProcessesCreated))
 	processId := tr.Config.idsOfDaemonProcessesCreated[0]
 	command := fmt.Sprintf("bash -c 'ps -p %d -o cmd= | grep -q sleep'", processId)
-	tr.ExecuteInDir(".", command)
+	tr.Cmd().Run("%s", command)
 
 	tr.Cleanup()
 	assert.Equal(t, 0, len(tr.Config.idsOfDaemonProcessesCreated))
 	command = fmt.Sprintf("bash -c '! ps -p %d'", processId)
-	tr.ExecuteInDir(".", command)
+	tr.Cmd().Run("%s", command)
 }
 
 func TestCustomCleanupFunction(t *testing.T) {

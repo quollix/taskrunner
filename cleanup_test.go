@@ -12,7 +12,7 @@ import (
 )
 
 func TestCleanup(t *testing.T) {
-	tr.StartDaemon(".", "sleep 10")
+	tr.Cmd().AsDaemon().Run("sleep 10")
 	tr.Cleanup()
 	assertThatNoProcessesSurvived([]string{"sleep 10"})
 	tr.Config.idsOfDaemonProcessesCreated = []int{}
