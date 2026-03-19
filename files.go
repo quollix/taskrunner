@@ -35,11 +35,7 @@ func (f fileOps) MakeDir(format string, args ...any) {
 	f.taskRunner.makeDir(path)
 }
 
-func (f fileOps) Remove(paths ...string) {
-	f.taskRunner.remove(paths...)
-}
-
-func (f fileOps) Removef(format string, args ...any) {
+func (f fileOps) Remove(format string, args ...any) {
 	path := resolvePath(format, args...)
 	f.taskRunner.remove(path)
 }

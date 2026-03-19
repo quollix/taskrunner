@@ -29,7 +29,7 @@ func assertNotExists(t *testing.T, path string) {
 }
 
 func setupDirWithFile(t *testing.T, dir, name string) string {
-	tr.File.Remove(dir)
+	tr.File.Remove("%s", dir)
 	tr.File.MakeDir("%s", dir)
 	assertExists(t, dir)
 	p := filepath.Join(dir, name)
@@ -39,8 +39,10 @@ func setupDirWithFile(t *testing.T, dir, name string) string {
 }
 
 func TestDirCopy(t *testing.T) {
-	tr.File.Remove(tmpDir, tmpDir2)
-	defer tr.File.Remove(tmpDir, tmpDir2)
+	tr.File.Remove("%s", tmpDir)
+	tr.File.Remove("%s", tmpDir2)
+	defer tr.File.Remove("%s", tmpDir)
+	defer tr.File.Remove("%s", tmpDir2)
 	setupDirWithFile(t, tmpDir, "test.txt")
 	tr.File.MakeDir("%s", tmpDir2)
 
@@ -53,8 +55,10 @@ func TestDirCopy(t *testing.T) {
 }
 
 func TestDirMove(t *testing.T) {
-	tr.File.Remove(tmpDir, tmpDir2)
-	defer tr.File.Remove(tmpDir, tmpDir2)
+	tr.File.Remove("%s", tmpDir)
+	tr.File.Remove("%s", tmpDir2)
+	defer tr.File.Remove("%s", tmpDir)
+	defer tr.File.Remove("%s", tmpDir2)
 	setupDirWithFile(t, tmpDir, "test.txt")
 
 	srcDirMode := mustMode(t, tmpDir)
@@ -70,8 +74,8 @@ func TestDirMove(t *testing.T) {
 }
 
 func TestRenameDir(t *testing.T) {
-	tr.File.Remove(tmpDir)
-	defer tr.File.Remove(tmpDir)
+	tr.File.Remove("%s", tmpDir)
+	defer tr.File.Remove("%s", tmpDir)
 	setupDirWithFile(t, tmpDir, "x.txt")
 
 	sub := filepath.Join(tmpDir, "subdir")
@@ -88,8 +92,10 @@ func TestRenameDir(t *testing.T) {
 }
 
 func TestFileCopy(t *testing.T) {
-	tr.File.Remove(tmpDir, tmpDir2)
-	defer tr.File.Remove(tmpDir, tmpDir2)
+	tr.File.Remove("%s", tmpDir)
+	tr.File.Remove("%s", tmpDir2)
+	defer tr.File.Remove("%s", tmpDir)
+	defer tr.File.Remove("%s", tmpDir2)
 	src := setupDirWithFile(t, tmpDir, "a.txt")
 	dst := filepath.Join(tmpDir2, "b.txt")
 	tr.File.MakeDir("%s", tmpDir2)
@@ -102,8 +108,10 @@ func TestFileCopy(t *testing.T) {
 }
 
 func TestFileMove(t *testing.T) {
-	tr.File.Remove(tmpDir, tmpDir2)
-	defer tr.File.Remove(tmpDir, tmpDir2)
+	tr.File.Remove("%s", tmpDir)
+	tr.File.Remove("%s", tmpDir2)
+	defer tr.File.Remove("%s", tmpDir)
+	defer tr.File.Remove("%s", tmpDir2)
 	src := setupDirWithFile(t, tmpDir, "a.txt")
 	dst := filepath.Join(tmpDir2, "b.txt")
 	srcMode := mustMode(t, src)
@@ -117,8 +125,8 @@ func TestFileMove(t *testing.T) {
 }
 
 func TestFileRename(t *testing.T) {
-	tr.File.Remove(tmpDir)
-	defer tr.File.Remove(tmpDir)
+	tr.File.Remove("%s", tmpDir)
+	defer tr.File.Remove("%s", tmpDir)
 	src := setupDirWithFile(t, tmpDir, "a.txt")
 	dst := filepath.Join(tmpDir, "b.txt")
 	srcMode := mustMode(t, src)
@@ -131,8 +139,8 @@ func TestFileRename(t *testing.T) {
 }
 
 func TestFileRenameRejectsPath(t *testing.T) {
-	tr.File.Remove(tmpDir)
-	defer tr.File.Remove(tmpDir)
+	tr.File.Remove("%s", tmpDir)
+	defer tr.File.Remove("%s", tmpDir)
 	src := setupDirWithFile(t, tmpDir, "a.txt")
 
 	tr.File.Rename("%s", src).To("%s", filepath.Join("nested", "b.txt"))

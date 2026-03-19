@@ -2,6 +2,7 @@ package taskrunner
 
 import (
 	"os"
+	"syscall"
 	"testing"
 	"time"
 
@@ -17,7 +18,8 @@ var (
 var tr = GetTaskRunner()
 
 func TestMain(m *testing.M) {
-	tr.File.Remove(tmpDir, tmpDir2)
+	tr.File.Remove("%s", tmpDir)
+	tr.File.Remove("%s", tmpDir2)
 	exitCode := m.Run()
 	os.Exit(exitCode)
 }
@@ -28,13 +30,13 @@ func TestCommandSuccessful(t *testing.T) {
 
 func TestDirCreationAndDeletion(t *testing.T) {
 	assert.False(t, checkIfExists(tmpDir))
-	defer tr.File.Remove(tmpDir)
+	defer tr.File.Remove("%s", tmpDir)
 	tr.File.MakeDir("%s", tmpDir)
 	assert.True(t, checkIfExists(tmpDir))
 
 	createFile(t, tmpDir+"/test.txt")
 	assert.True(t, checkIfExists(tmpDir+"/test.txt"))
-	tr.File.Remove(tmpDir)
+	tr.File.Remove("%s", tmpDir)
 	assert.False(t, checkIfExists(tmpDir))
 }
 
@@ -50,7 +52,11 @@ func checkIfExists(path string) bool {
 	return false
 }
 
-// recheck whether my tests still make sense
+func processExists(pid int) bool {
+	err := syscall.Kill(pid, 0)
+	return err == nil
+}
+
 func TestDaemon(t *testing.T) {
 	assert.Equal(t, 0, len(tr.daemons))
 
@@ -58,15 +64,20 @@ func TestDaemon(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return len(tr.daemons) == 1 && tr.daemons[0].name == "sleepy"
 	}, time.Second, 10*time.Millisecond)
+	pid := tr.daemons[0].cmd.Process.Pid
+	assert.True(t, processExists(pid))
 
 	tr.Cleanup()
 	assert.Eventually(t, func() bool {
 		return len(tr.daemons) == 0
 	}, time.Second, 10*time.Millisecond)
+	assert.Eventually(t, func() bool {
+		return !processExists(pid)
+	}, time.Second, 10*time.Millisecond)
 }
 
 func TestCustomCleanupFunction(t *testing.T) {
-	defer tr.File.Remove(tmpDir)
+	defer tr.File.Remove("%s", tmpDir)
 	previousCleanupFunc := tr.Config.CleanupFunc
 	defer func() {
 		tr.Config.CleanupFunc = previousCleanupFunc
@@ -77,4 +88,11 @@ func TestCustomCleanupFunction(t *testing.T) {
 	assert.False(t, checkIfExists(tmpDir))
 	tr.Cleanup()
 	assert.True(t, checkIfExists(tmpDir))
+}
+
+func TestCommandEnvPassed(t *testing.T) {
+	tr.Cmd().
+		Dir(sampleTestDir).
+		Env("TASKRUNNER_TEST_ENV", "expected").
+		Run("go test -run TestEnvVarAvailable env_test.go")
 }
