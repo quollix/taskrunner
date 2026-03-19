@@ -29,7 +29,8 @@ func assertNotExists(t *testing.T, path string) {
 }
 
 func setupDirWithFile(t *testing.T, dir, name string) string {
-	tr.MakeDir(dir)
+	tr.File.Remove(dir)
+	tr.File.MakeDir("%s", dir)
 	assertExists(t, dir)
 	p := filepath.Join(dir, name)
 	createFile(t, p)
@@ -38,11 +39,12 @@ func setupDirWithFile(t *testing.T, dir, name string) string {
 }
 
 func TestDirCopy(t *testing.T) {
-	defer tr.Remove(tmpDir, tmpDir2)
+	tr.File.Remove(tmpDir, tmpDir2)
+	defer tr.File.Remove(tmpDir, tmpDir2)
 	setupDirWithFile(t, tmpDir, "test.txt")
-	tr.MakeDir(tmpDir2)
+	tr.File.MakeDir("%s", tmpDir2)
 
-	tr.Copy(tmpDir, tmpDir2)
+	tr.File.Copy("%s", tmpDir).To("%s", tmpDir2)
 
 	assertExists(t, tmpDir)
 	assertExists(t, filepath.Join(tmpDir2, "test.txt"))
@@ -51,13 +53,14 @@ func TestDirCopy(t *testing.T) {
 }
 
 func TestDirMove(t *testing.T) {
-	defer tr.Remove(tmpDir, tmpDir2)
+	tr.File.Remove(tmpDir, tmpDir2)
+	defer tr.File.Remove(tmpDir, tmpDir2)
 	setupDirWithFile(t, tmpDir, "test.txt")
 
 	srcDirMode := mustMode(t, tmpDir)
 	srcFileMode := mustMode(t, filepath.Join(tmpDir, "test.txt"))
 
-	tr.Move(tmpDir, tmpDir2)
+	tr.File.Move("%s", tmpDir).To("%s", tmpDir2)
 
 	assertNotExists(t, tmpDir)
 	assertExists(t, tmpDir2)
@@ -67,16 +70,17 @@ func TestDirMove(t *testing.T) {
 }
 
 func TestRenameDir(t *testing.T) {
-	defer tr.Remove(tmpDir)
+	tr.File.Remove(tmpDir)
+	defer tr.File.Remove(tmpDir)
 	setupDirWithFile(t, tmpDir, "x.txt")
 
 	sub := filepath.Join(tmpDir, "subdir")
-	tr.MakeDir(sub)
+	tr.File.MakeDir("%s", sub)
 	createFile(t, filepath.Join(sub, "y.txt"))
 	assertExists(t, filepath.Join(sub, "y.txt"))
 
 	newSub := filepath.Join(tmpDir, "renamed")
-	tr.Rename(sub, newSub)
+	tr.File.Rename("%s", sub).To("%s", newSub)
 
 	assertNotExists(t, sub)
 	assertExists(t, newSub)
@@ -84,12 +88,13 @@ func TestRenameDir(t *testing.T) {
 }
 
 func TestFileCopy(t *testing.T) {
-	defer tr.Remove(tmpDir, tmpDir2)
+	tr.File.Remove(tmpDir, tmpDir2)
+	defer tr.File.Remove(tmpDir, tmpDir2)
 	src := setupDirWithFile(t, tmpDir, "a.txt")
 	dst := filepath.Join(tmpDir2, "b.txt")
-	tr.MakeDir(tmpDir2)
+	tr.File.MakeDir("%s", tmpDir2)
 
-	tr.Copy(src, dst)
+	tr.File.Copy("%s", src).To("%s", dst)
 
 	assertExists(t, src)
 	assertExists(t, dst)
@@ -97,13 +102,14 @@ func TestFileCopy(t *testing.T) {
 }
 
 func TestFileMove(t *testing.T) {
-	defer tr.Remove(tmpDir, tmpDir2)
+	tr.File.Remove(tmpDir, tmpDir2)
+	defer tr.File.Remove(tmpDir, tmpDir2)
 	src := setupDirWithFile(t, tmpDir, "a.txt")
 	dst := filepath.Join(tmpDir2, "b.txt")
 	srcMode := mustMode(t, src)
-	tr.MakeDir(tmpDir2)
+	tr.File.MakeDir("%s", tmpDir2)
 
-	tr.Move(src, dst)
+	tr.File.Move("%s", src).To("%s", dst)
 
 	assertNotExists(t, src)
 	assertExists(t, dst)
@@ -111,12 +117,13 @@ func TestFileMove(t *testing.T) {
 }
 
 func TestFileRename(t *testing.T) {
-	defer tr.Remove(tmpDir)
+	tr.File.Remove(tmpDir)
+	defer tr.File.Remove(tmpDir)
 	src := setupDirWithFile(t, tmpDir, "a.txt")
 	dst := filepath.Join(tmpDir, "b.txt")
 	srcMode := mustMode(t, src)
 
-	tr.Rename(src, dst)
+	tr.File.Rename("%s", src).To("%s", dst)
 
 	assertNotExists(t, src)
 	assertExists(t, dst)

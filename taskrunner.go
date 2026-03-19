@@ -5,10 +5,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 )
 
 func GetTaskRunner() *TaskRunner {
-	return &TaskRunner{
+	tr := &TaskRunner{
 		Config: &Config{
 			CleanupOnFailure:            true,
 			CleanupFunc:                 nil,
@@ -17,13 +18,17 @@ func GetTaskRunner() *TaskRunner {
 		},
 		Log: consoleLogger{},
 	}
+	tr.File = fileOps{taskRunner: tr}
+	return tr
 }
 
 type TaskRunner struct {
 	Config          *Config
+	File            fileOps
 	Log             logger
 	daemons         []*daemonProcess
 	nextDaemonColor int
+	daemonMu        sync.Mutex
 }
 
 type Command struct {
@@ -39,6 +44,16 @@ type daemonProcess struct {
 	command string
 	name    string
 	color   string
+}
+
+type fileOps struct {
+	taskRunner *TaskRunner
+}
+
+type pendingFileTarget struct {
+	taskRunner *TaskRunner
+	srcPath    string
+	action     string
 }
 
 type Config struct {

@@ -17,7 +17,7 @@ var (
 var tr = GetTaskRunner()
 
 func TestMain(m *testing.M) {
-	tr.Remove(tmpDir, tmpDir2)
+	tr.File.Remove(tmpDir, tmpDir2)
 	exitCode := m.Run()
 	os.Exit(exitCode)
 }
@@ -28,13 +28,13 @@ func TestCommandSuccessful(t *testing.T) {
 
 func TestDirCreationAndDeletion(t *testing.T) {
 	assert.False(t, checkIfExists(tmpDir))
-	defer tr.Remove(tmpDir)
-	tr.MakeDir(tmpDir)
+	defer tr.File.Remove(tmpDir)
+	tr.File.MakeDir("%s", tmpDir)
 	assert.True(t, checkIfExists(tmpDir))
 
 	createFile(t, tmpDir+"/test.txt")
 	assert.True(t, checkIfExists(tmpDir+"/test.txt"))
-	tr.Remove(tmpDir)
+	tr.File.Remove(tmpDir)
 	assert.False(t, checkIfExists(tmpDir))
 }
 
@@ -66,9 +66,13 @@ func TestDaemon(t *testing.T) {
 }
 
 func TestCustomCleanupFunction(t *testing.T) {
-	defer tr.Remove(tmpDir)
+	defer tr.File.Remove(tmpDir)
+	previousCleanupFunc := tr.Config.CleanupFunc
+	defer func() {
+		tr.Config.CleanupFunc = previousCleanupFunc
+	}()
 	tr.Config.CleanupFunc = func() {
-		tr.MakeDir(tmpDir)
+		tr.File.MakeDir("%s", tmpDir)
 	}
 	assert.False(t, checkIfExists(tmpDir))
 	tr.Cleanup()

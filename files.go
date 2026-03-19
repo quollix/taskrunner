@@ -1,12 +1,69 @@
 package taskrunner
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 )
 
-func (t *TaskRunner) Copy(srcPath, destPath string) {
+func (f fileOps) Copy(format string, args ...any) *pendingFileTarget {
+	return &pendingFileTarget{
+		taskRunner: f.taskRunner,
+		srcPath:    resolvePath(format, args...),
+		action:     "copy",
+	}
+}
+
+func (f fileOps) Move(format string, args ...any) *pendingFileTarget {
+	return &pendingFileTarget{
+		taskRunner: f.taskRunner,
+		srcPath:    resolvePath(format, args...),
+		action:     "move",
+	}
+}
+
+func (f fileOps) Rename(format string, args ...any) *pendingFileTarget {
+	return &pendingFileTarget{
+		taskRunner: f.taskRunner,
+		srcPath:    resolvePath(format, args...),
+		action:     "rename",
+	}
+}
+
+func (f fileOps) MakeDir(format string, args ...any) {
+	path := resolvePath(format, args...)
+	f.taskRunner.makeDir(path)
+}
+
+func (f fileOps) Remove(paths ...string) {
+	f.taskRunner.remove(paths...)
+}
+
+func (f fileOps) Removef(format string, args ...any) {
+	path := resolvePath(format, args...)
+	f.taskRunner.remove(path)
+}
+
+func (p *pendingFileTarget) To(format string, args ...any) {
+	destPath := resolvePath(format, args...)
+	switch p.action {
+	case "copy":
+		p.taskRunner.copy(p.srcPath, destPath)
+	case "move":
+		p.taskRunner.move(p.srcPath, destPath)
+	case "rename":
+		p.taskRunner.rename(p.srcPath, destPath)
+	default:
+		p.taskRunner.Log.Error("unknown file action '%s'", p.action)
+	}
+}
+
+func resolvePath(format string, args ...any) string {
+	return filepath.Clean(fmt.Sprintf(format, args...))
+}
+
+func (t *TaskRunner) copy(srcPath, destPath string) {
 	srcPath = filepath.Clean(srcPath)
 	destPath = filepath.Clean(destPath)
 
@@ -97,7 +154,7 @@ func (t *TaskRunner) copyDir(srcDir, destDir string) {
 	}
 }
 
-func (t *TaskRunner) Remove(paths ...string) {
+func (t *TaskRunner) remove(paths ...string) {
 	for _, p := range paths {
 		p = filepath.Clean(p)
 		if _, err := os.Stat(p); os.IsNotExist(err) {
@@ -109,14 +166,14 @@ func (t *TaskRunner) Remove(paths ...string) {
 	}
 }
 
-func (t *TaskRunner) MakeDir(path string) {
+func (t *TaskRunner) makeDir(path string) {
 	path = filepath.Clean(path)
 	if err := os.MkdirAll(path, 0700); err != nil {
 		t.Log.Error("error creating %s: %v", path, err)
 	}
 }
 
-func (t *TaskRunner) Move(srcPath, destPath string) {
+func (t *TaskRunner) move(srcPath, destPath string) {
 	srcPath = filepath.Clean(srcPath)
 	destPath = filepath.Clean(destPath)
 
@@ -129,7 +186,7 @@ func (t *TaskRunner) Move(srcPath, destPath string) {
 	}
 }
 
-func (t *TaskRunner) Rename(srcPath, destPath string) {
+func (t *TaskRunner) rename(srcPath, destPath string) {
 	srcPath = filepath.Clean(srcPath)
 	destPath = filepath.Clean(destPath)
 
