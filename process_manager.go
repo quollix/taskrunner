@@ -5,14 +5,11 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strings"
 	"syscall"
-
-	"github.com/quollix/taskrunner/platform"
 )
 
-func (c *Command) startDaemon(cmd *exec.Cmd, commandStr string) {
-	platform.SetProcessGroup(cmd)
-
+func (c *Command) startDaemon(cmd *exec.Cmd) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -24,17 +21,17 @@ func (c *Command) startDaemon(cmd *exec.Cmd, commandStr string) {
 		return
 	}
 
-	c.taskRunner.Config.idsOfDaemonProcessesCreated = append(c.taskRunner.Config.idsOfDaemonProcessesCreated, cmd.Process.Pid)
-
 	if err != nil {
-		c.taskRunner.Log.Error("Command: '%s' -> failed with error: %v", commandStr, err)
+		c.taskRunner.Log.Error("Command: '%s' -> failed with error: %v", formatCommand(cmd), err)
 		c.taskRunner.ExitWithError()
 		return
 	}
 
-	c.taskRunner.Log.Info("started daemon with ID '%v' using command '%s'", cmd.Process.Pid, commandStr)
+	c.taskRunner.registerDaemon(cmd)
+	c.taskRunner.Log.Info("started daemon with ID '%v' using command '%s'", cmd.Process.Pid, formatCommand(cmd))
 
 	go func() {
+		commandStr := formatCommand(cmd)
 		if err = cmd.Wait(); err != nil {
 			if err.Error() == "signal: killed" {
 				c.taskRunner.Log.Info("command: '%s' -> stopped through cleanup process killing", commandStr)
@@ -73,17 +70,24 @@ func (t *TaskRunner) ResetCursor() {
 }
 
 func (t *TaskRunner) killDaemonProcessesCreateDuringThisRun() {
-	if len(t.Config.idsOfDaemonProcessesCreated) == 0 {
+	t.daemonMu.Lock()
+	daemons := append([]*daemonProcess(nil), t.daemons...)
+	t.daemons = nil
+	t.daemonMu.Unlock()
+
+	if len(daemons) == 0 {
 		return
 	}
 	t.Log.Info("Killing daemon processes")
-	for _, pid := range t.Config.idsOfDaemonProcessesCreated {
-		t.Log.Info("  Killing process with ID '%v'", pid)
-		if err := platform.KillProcessGroup(pid); err != nil {
-			t.Log.Error("Failed to kill process with ID '%v' because of error: %v", pid, err)
+	for _, daemon := range daemons {
+		if daemon.cmd == nil || daemon.cmd.Process == nil {
+			continue
+		}
+		t.Log.Info("  Killing process with ID '%v'", daemon.cmd.Process.Pid)
+		if err := daemon.cmd.Process.Kill(); err != nil {
+			t.Log.Error("Failed to kill process with ID '%v' because of error: %v", daemon.cmd.Process.Pid, err)
 		}
 	}
-	t.Config.idsOfDaemonProcessesCreated = nil
 }
 
 func appendEnvsToCommand(cmd *exec.Cmd, envs []string) {
@@ -92,6 +96,19 @@ func appendEnvsToCommand(cmd *exec.Cmd, envs []string) {
 }
 
 var DefaultEnvs []string
+
+func (t *TaskRunner) registerDaemon(cmd *exec.Cmd) {
+	t.daemonMu.Lock()
+	defer t.daemonMu.Unlock()
+	t.daemons = append(t.daemons, &daemonProcess{
+		cmd:     cmd,
+		command: formatCommand(cmd),
+	})
+}
+
+func formatCommand(cmd *exec.Cmd) string {
+	return strings.Join(append([]string{cmd.Path}, cmd.Args[1:]...), " ")
+}
 
 func (t *TaskRunner) EnableAbortForKeystrokeControlPlusC() {
 	go func() {

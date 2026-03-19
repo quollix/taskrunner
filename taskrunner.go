@@ -3,7 +3,9 @@ package taskrunner
 import (
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"sync"
 )
 
 func GetTaskRunner() *TaskRunner {
@@ -12,7 +14,6 @@ func GetTaskRunner() *TaskRunner {
 			CleanupOnFailure:            true,
 			CleanupFunc:                 nil,
 			DefaultEnvironmentVariables: []string{},
-			idsOfDaemonProcessesCreated: []int{},
 			parentDir:                   getParentDir(),
 		},
 		Log: consoleLogger{},
@@ -22,6 +23,9 @@ func GetTaskRunner() *TaskRunner {
 type TaskRunner struct {
 	Config *Config
 	Log    logger
+
+	daemonMu sync.Mutex
+	daemons  []*daemonProcess
 }
 
 type Command struct {
@@ -31,11 +35,15 @@ type Command struct {
 	asDaemon   bool
 }
 
+type daemonProcess struct {
+	cmd     *exec.Cmd
+	command string
+}
+
 type Config struct {
 	CleanupOnFailure            bool
 	CleanupFunc                 func()
 	DefaultEnvironmentVariables []string
-	idsOfDaemonProcessesCreated []int
 	parentDir                   string
 }
 

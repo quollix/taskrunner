@@ -6,14 +6,21 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
-
-	"github.com/quollix/taskrunner/platform"
 )
 
 func (t *TaskRunner) KillProcesses(processSubStrings []string) {
-	platform.KillProcesses(processSubStrings)
+	for _, process := range processSubStrings {
+		var cmd *exec.Cmd
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command("taskkill", "/F", "/IM", process+".exe", "/T")
+		} else {
+			cmd = exec.Command("pkill", "-f", process)
+		}
+		_ = cmd.Run()
+	}
 }
 
 func (c *Command) Dir(dir string) *Command {
@@ -36,21 +43,30 @@ func (c *Command) Run(format string, args ...any) {
 	cmd := c.buildCommand(commandStr)
 
 	if c.asDaemon {
-		c.startDaemon(cmd, commandStr)
+		c.startDaemon(cmd)
 		return
 	}
 
-	c.runForeground(cmd, commandStr)
+	c.runForeground(cmd)
 }
 
 func (c *Command) buildCommand(commandStr string) *exec.Cmd {
-	cmd := platform.BuildCommand(c.dir, commandStr)
+	parts := strings.Fields(commandStr)
+	if len(parts) == 0 {
+		c.taskRunner.Log.Error("invalid command '%s': empty command", commandStr)
+		c.taskRunner.ExitWithError()
+		return nil
+	}
+
+	cmd := exec.Command(parts[0], parts[1:]...)
+	cmd.Dir = c.dir
 	appendEnvsToCommand(cmd, c.envs)
 	return cmd
 }
 
-func (c *Command) runForeground(cmd *exec.Cmd, commandStr string) {
+func (c *Command) runForeground(cmd *exec.Cmd) {
 	shortDir := strings.Replace(c.dir, c.taskRunner.Config.parentDir, "", -1)
+	commandStr := formatCommand(cmd)
 	c.taskRunner.Log.Info("in directory '%s', executing '%s'", shortDir, commandStr)
 
 	var stdoutBuf, stderrBuf bytes.Buffer

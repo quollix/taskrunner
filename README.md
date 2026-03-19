@@ -32,7 +32,7 @@ func TestFrontend() {
     tr.Cmd().Dir(frontendDir).Run("npm install")
     tr.Cmd().Dir(frontendDir).Env("VITE_APP_PROFILE", "TEST").AsDaemon().Run("npm run serve")
     tr.WaitForWebPageToBeReady("http://localhost:8081/")
-    tr.Cmd().Dir(acceptanceTestsDir).Env("CYPRESS_PROFILE", "TEST").Run("%s", cypressCommand)
+    tr.Cmd().Dir(acceptanceTestsDir).Env("CYPRESS_PROFILE", "TEST").Run(cypressCommand)
 }
 ```
 

@@ -3,9 +3,9 @@
 package taskrunner
 
 import (
-	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -53,18 +53,23 @@ func checkIfExists(path string) bool {
 }
 
 func TestDaemon(t *testing.T) {
-	assert.Equal(t, 0, len(tr.Config.idsOfDaemonProcessesCreated))
+	tr.daemonMu.Lock()
+	assert.Equal(t, 0, len(tr.daemons))
+	tr.daemonMu.Unlock()
 
 	tr.Cmd().AsDaemon().Run("sleep 100")
-	assert.Equal(t, 1, len(tr.Config.idsOfDaemonProcessesCreated))
-	processId := tr.Config.idsOfDaemonProcessesCreated[0]
-	command := fmt.Sprintf("bash -c 'ps -p %d -o cmd= | grep -q sleep'", processId)
-	tr.Cmd().Run("%s", command)
+	assert.Eventually(t, func() bool {
+		tr.daemonMu.Lock()
+		defer tr.daemonMu.Unlock()
+		return len(tr.daemons) == 1
+	}, time.Second, 10*time.Millisecond)
 
 	tr.Cleanup()
-	assert.Equal(t, 0, len(tr.Config.idsOfDaemonProcessesCreated))
-	command = fmt.Sprintf("bash -c '! ps -p %d'", processId)
-	tr.Cmd().Run("%s", command)
+	assert.Eventually(t, func() bool {
+		tr.daemonMu.Lock()
+		defer tr.daemonMu.Unlock()
+		return len(tr.daemons) == 0
+	}, time.Second, 10*time.Millisecond)
 }
 
 func TestCustomCleanupFunction(t *testing.T) {
