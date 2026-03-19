@@ -60,12 +60,13 @@ func (c *Command) buildCommand(commandStr string) *exec.Cmd {
 
 	cmd := exec.Command(parts[0], parts[1:]...)
 	cmd.Dir = c.dir
-	appendEnvsToCommand(cmd, c.envs)
+	cmd.Env = append(cmd.Env, os.Environ()...)
+	cmd.Env = append(cmd.Env, c.envs...)
 	return cmd
 }
 
 func (c *Command) runForeground(cmd *exec.Cmd) {
-	shortDir := strings.Replace(c.dir, c.taskRunner.Config.parentDir, "", -1)
+	shortDir := strings.ReplaceAll(c.dir, c.taskRunner.Config.parentDir, "")
 	commandStr := formatCommand(cmd)
 	c.taskRunner.Log.Info("in directory '%s', executing '%s'", shortDir, commandStr)
 
@@ -86,15 +87,5 @@ func (c *Command) runForeground(cmd *exec.Cmd) {
 		c.taskRunner.ExitWithError()
 	} else {
 		c.taskRunner.Log.Info(" => Command successful. %s", elapsedTimeSummary)
-	}
-}
-
-func (t *TaskRunner) PromptForContinuation(prompt string) {
-	fmt.Printf("%s (y/N): ", prompt)
-	var response string
-	fmt.Scanln(&response)
-	if response != "y" && response != "Y" {
-		fmt.Println("Command aborted.")
-		os.Exit(0)
 	}
 }

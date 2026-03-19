@@ -51,7 +51,7 @@ func (t *TaskRunner) Cleanup() {
 		t.Log.Info("calling custom cleanup function")
 		t.Config.CleanupFunc()
 	}
-	t.ResetCursor()
+	t.resetCursor()
 }
 
 func (t *TaskRunner) ExitWithError() {
@@ -60,11 +60,11 @@ func (t *TaskRunner) ExitWithError() {
 	} else {
 		t.killDaemonProcessesCreateDuringThisRun()
 	}
-	t.ResetCursor()
+	t.resetCursor()
 	os.Exit(1)
 }
 
-func (t *TaskRunner) ResetCursor() {
+func (t *TaskRunner) resetCursor() {
 	fmt.Print("\x1b[?25h") // Shows the terminal cursor again if it was hidden.
 	fmt.Print("\x1b[0m")   // Resets all terminal text attributes (color, bold, underline) back to default.
 }
@@ -90,13 +90,6 @@ func (t *TaskRunner) killDaemonProcessesCreateDuringThisRun() {
 	}
 }
 
-func appendEnvsToCommand(cmd *exec.Cmd, envs []string) {
-	envsWithLogLevel := append(envs, DefaultEnvs...)
-	cmd.Env = append(os.Environ(), envsWithLogLevel...)
-}
-
-var DefaultEnvs []string
-
 func (t *TaskRunner) registerDaemon(cmd *exec.Cmd) {
 	t.daemonMu.Lock()
 	defer t.daemonMu.Unlock()
@@ -119,4 +112,14 @@ func (t *TaskRunner) EnableAbortForKeystrokeControlPlusC() {
 		t.Cleanup()
 		os.Exit(1)
 	}()
+}
+
+func (t *TaskRunner) PromptForContinuation(prompt string) {
+	fmt.Printf("%s (y/N): ", prompt)
+	var response string
+	fmt.Scanln(&response)
+	if response != "y" && response != "Y" {
+		fmt.Println("Command aborted.")
+		os.Exit(0)
+	}
 }
