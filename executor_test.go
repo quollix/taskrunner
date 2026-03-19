@@ -52,6 +52,7 @@ func checkIfExists(path string) bool {
 	return false
 }
 
+// recheck whether my tests still make sense
 func TestDaemon(t *testing.T) {
 	assert.Equal(t, 0, len(tr.daemons))
 

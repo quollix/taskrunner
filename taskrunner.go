@@ -22,6 +22,7 @@ func GetTaskRunner() *TaskRunner {
 type TaskRunner struct {
 	Config          *Config
 	Log             logger
+	daemons         []*daemonProcess
 	nextDaemonColor int
 }
 

@@ -78,10 +78,8 @@ func (t *TaskRunner) resetCursor() {
 }
 
 func (t *TaskRunner) killDaemonProcessesCreateDuringThisRun() {
-	t.daemonMu.Lock()
 	daemons := append([]*daemonProcess(nil), t.daemons...)
 	t.daemons = nil
-	t.daemonMu.Unlock()
 
 	if len(daemons) == 0 {
 		return
@@ -99,8 +97,6 @@ func (t *TaskRunner) killDaemonProcessesCreateDuringThisRun() {
 }
 
 func (t *TaskRunner) registerDaemon(cmd *exec.Cmd, name, color string) {
-	t.daemonMu.Lock()
-	defer t.daemonMu.Unlock()
 	t.daemons = append(t.daemons, &daemonProcess{
 		cmd:     cmd,
 		command: formatCommand(cmd),
@@ -111,8 +107,6 @@ func (t *TaskRunner) registerDaemon(cmd *exec.Cmd, name, color string) {
 
 func (t *TaskRunner) nextColor() string {
 	colors := []string{cyan, yellow, blue, magenta, brightCyan, brightBlue, brightYel, white}
-	t.daemonMu.Lock()
-	defer t.daemonMu.Unlock()
 	color := colors[t.nextDaemonColor%len(colors)]
 	t.nextDaemonColor++
 	return color
