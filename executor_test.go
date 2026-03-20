@@ -106,3 +106,21 @@ func TestCommandAllowFailReturnsCombinedOutput(t *testing.T) {
 	assert.NotEmpty(t, strings.TrimSpace(output))
 	assert.Contains(t, output, "does_not_exist.go")
 }
+
+func TestSplitCommandArgsPreservesSingleQuotedArgument(t *testing.T) {
+	parts, err := splitCommandArgs("ssh host 'cd /dir && docker compose -f docker-compose.prod.yml down'")
+
+	assert.NoError(t, err)
+	assert.Equal(t, []string{
+		"ssh",
+		"host",
+		"cd /dir && docker compose -f docker-compose.prod.yml down",
+	}, parts)
+}
+
+func TestSplitCommandArgsReturnsErrorForUnmatchedSingleQuote(t *testing.T) {
+	parts, err := splitCommandArgs("ssh host 'cd /dir")
+
+	assert.Nil(t, parts)
+	assert.EqualError(t, err, "unmatched single quote")
+}

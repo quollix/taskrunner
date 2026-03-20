@@ -3,6 +3,7 @@ package taskrunner
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 func (c *Command) Dir(dir string) *Command {
@@ -51,7 +53,12 @@ func (c *Command) Run(format string, args ...any) *Command {
 }
 
 func (c *Command) buildCommand(commandStr string) *exec.Cmd {
-	parts := strings.Fields(commandStr)
+	parts, err := splitCommandArgs(commandStr)
+	if err != nil {
+		c.taskRunner.Log.Error("invalid command '%s': %v", commandStr, err)
+		c.taskRunner.ExitWithError()
+		return nil
+	}
 	if len(parts) == 0 {
 		c.taskRunner.Log.Error("invalid command '%s': empty command", commandStr)
 		c.taskRunner.ExitWithError()
@@ -63,6 +70,38 @@ func (c *Command) buildCommand(commandStr string) *exec.Cmd {
 	cmd.Env = append(cmd.Env, os.Environ()...)
 	cmd.Env = append(cmd.Env, c.envs...)
 	return cmd
+}
+
+func splitCommandArgs(commandStr string) ([]string, error) {
+	var parts []string
+	var current []rune
+	inSingleQuotes := false
+
+	flushCurrent := func() {
+		if len(current) == 0 {
+			return
+		}
+		parts = append(parts, string(current))
+		current = nil
+	}
+
+	for _, r := range commandStr {
+		switch {
+		case r == '\'':
+			inSingleQuotes = !inSingleQuotes
+		case unicode.IsSpace(r) && !inSingleQuotes:
+			flushCurrent()
+		default:
+			current = append(current, r)
+		}
+	}
+
+	if inSingleQuotes {
+		return nil, errors.New("unmatched single quote")
+	}
+
+	flushCurrent()
+	return parts, nil
 }
 
 func (c *Command) runForeground(cmd *exec.Cmd) {
