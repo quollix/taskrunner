@@ -37,6 +37,8 @@ type Command struct {
 	envs       []string
 	asDaemon   bool
 	name       string
+	allowFail  bool
+	lastOutput string
 }
 
 type daemonProcess struct {

@@ -33,6 +33,9 @@ func TestFrontend() {
     tr.Cmd().Dir(frontendDir).Env("VITE_APP_PROFILE", "TEST").AsDaemon("frontend").Run("npm run serve")
     tr.WaitForWebPageToBeReady("http://localhost:8081/")
     tr.Cmd().Dir(acceptanceTestsDir).Env("CYPRESS_PROFILE", "TEST").Run(cypressCommand)
+
+    output := tr.Cmd().AllowFail().Run("go test ./...").Output()
+    tr.Log.Info("test output:\n%s", output)
 }
 ```
 

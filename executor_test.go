@@ -2,6 +2,7 @@ package taskrunner
 
 import (
 	"os"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -91,8 +92,17 @@ func TestCustomCleanupFunction(t *testing.T) {
 }
 
 func TestCommandEnvPassed(t *testing.T) {
-	tr.Cmd().
-		Dir(sampleTestDir).
-		Env("TASKRUNNER_TEST_ENV", "expected").
-		Run("go test -run TestEnvVarAvailable env_test.go")
+	tr.Cmd().Dir(sampleTestDir).Env("TASKRUNNER_TEST_ENV", "expected").Run("go test -run TestEnvVarAvailable env_test.go")
+}
+
+func TestCommandOutput(t *testing.T) {
+	output := tr.Cmd().Dir(sampleTestDir).Run("go test -run TestWorks success_test.go").Output()
+	assert.Contains(t, output, "ok")
+	assert.Contains(t, output, "command-line-arguments")
+}
+
+func TestCommandAllowFailReturnsCombinedOutput(t *testing.T) {
+	output := tr.Cmd().AllowFail().Run("go test -run TestMissing sample_tests/does_not_exist.go").Output()
+	assert.NotEmpty(t, strings.TrimSpace(output))
+	assert.Contains(t, output, "does_not_exist.go")
 }

@@ -1,7 +1,6 @@
 package taskrunner
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -17,9 +16,8 @@ func (c *Command) startDaemon(cmd *exec.Cmd) {
 		return
 	}
 
-	var stdoutBuf, stderrBuf bytes.Buffer
 	color := c.taskRunner.nextColor()
-	c.attachOutput(cmd, c.name, color, &stdoutBuf, &stderrBuf)
+	c.attachOutput(cmd, c.name, color, nil)
 
 	err := cmd.Start()
 
