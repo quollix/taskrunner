@@ -1,6 +1,7 @@
 package taskrunner
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -89,6 +90,10 @@ func (t *TaskRunner) killDaemonProcessesCreateDuringThisRun() {
 		}
 		t.Log.Info("  Killing process with ID '%v'", daemon.cmd.Process.Pid)
 		if err := daemon.cmd.Process.Kill(); err != nil {
+			if errors.Is(err, os.ErrProcessDone) {
+				t.Log.Info("Process with ID '%v' was already finished", daemon.cmd.Process.Pid)
+				continue
+			}
 			t.Log.Error("Failed to kill process with ID '%v' because of error: %v", daemon.cmd.Process.Pid, err)
 		}
 	}
