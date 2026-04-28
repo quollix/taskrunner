@@ -15,6 +15,7 @@ func GetTaskRunner() *TaskRunner {
 			CleanupFunc:                 nil,
 			DefaultEnvironmentVariables: []string{},
 			parentDir:                   getParentDir(),
+			DefaultWaitTimeout:          60,
 		},
 		Log: consoleLogger{},
 	}
@@ -68,6 +69,7 @@ type Config struct {
 	CleanupFunc                 func()
 	DefaultEnvironmentVariables []string
 	parentDir                   string
+	DefaultWaitTimeout          int
 }
 
 func (t *TaskRunner) Cmd() *Command {

@@ -16,7 +16,7 @@ func (t *TaskRunner) WaitUntilPortIsReady(port string) {
 			return true, nil
 		}
 		return false, err
-	}, "port", "localhost:"+port, 60)
+	}, "port", "localhost:"+port, t.Config.DefaultWaitTimeout)
 }
 
 func (t *TaskRunner) retryOperation(operation func() (bool, error), description, target string, maxAttempts int) {
@@ -67,5 +67,5 @@ func (t *TaskRunner) WaitForWebPageToBeReady(targetUrl string) {
 			return true, nil
 		}
 		return false, err
-	}, "Index page", targetUrl, 60)
+	}, "Index page", targetUrl, t.Config.DefaultWaitTimeout)
 }
