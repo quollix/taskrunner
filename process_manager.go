@@ -133,7 +133,10 @@ func (t *TaskRunner) EnableAbortForKeystrokeControlPlusC() {
 func (t *TaskRunner) PromptForContinuation(prompt string) {
 	fmt.Printf("%s (y/N): ", prompt)
 	var response string
-	fmt.Scanln(&response)
+	if _, err := fmt.Scanln(&response); err != nil {
+		fmt.Println("Command aborted.")
+		os.Exit(0)
+	}
 	if response != "y" && response != "Y" {
 		fmt.Println("Command aborted.")
 		os.Exit(0)

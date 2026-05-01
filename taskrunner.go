@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sync"
 )
 
 func GetTaskRunner() *TaskRunner {
@@ -29,7 +28,6 @@ type TaskRunner struct {
 	Log             logger
 	daemons         []*daemonProcess
 	nextDaemonColor int
-	daemonMu        sync.Mutex
 }
 
 type Command struct {

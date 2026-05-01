@@ -97,19 +97,27 @@ func (t *TaskRunner) copyFile(src, dest string) {
 		return
 	}
 
-	in, err := os.Open(src)
+	in, err := os.Open(src) // #nosec G304 -- taskrunner intentionally copies caller-provided file paths
 	if err != nil {
 		t.Log.Error("error opening %s: %v", src, err)
 		return
 	}
-	defer in.Close()
+	defer func() {
+		if err := in.Close(); err != nil {
+			t.Log.Error("error closing %s: %v", src, err)
+		}
+	}()
 
-	out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, info.Mode())
+	out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, info.Mode()) // #nosec G304 -- taskrunner intentionally copies caller-provided file paths
 	if err != nil {
 		t.Log.Error("error creating %s: %v", dest, err)
 		return
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			t.Log.Error("error closing %s: %v", dest, err)
+		}
+	}()
 
 	if _, err := io.Copy(out, in); err != nil {
 		t.Log.Error("error copying from %s to %s: %v", src, dest, err)

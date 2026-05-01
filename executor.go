@@ -65,7 +65,7 @@ func (c *Command) buildCommand(commandStr string) *exec.Cmd {
 		return nil
 	}
 
-	cmd := exec.Command(parts[0], parts[1:]...)
+	cmd := exec.Command(parts[0], parts[1:]...) // #nosec G204 -- taskrunner intentionally executes caller-provided commands
 	cmd.Dir = c.dir
 	cmd.Env = append(cmd.Env, os.Environ()...)
 	cmd.Env = append(cmd.Env, c.envs...)

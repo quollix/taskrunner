@@ -12,7 +12,9 @@ func (t *TaskRunner) WaitUntilPortIsReady(port string) {
 	t.retryOperation(func() (bool, error) {
 		conn, err := net.DialTimeout("tcp", "localhost:"+port, 1*time.Second)
 		if err == nil {
-			conn.Close()
+			if closeErr := conn.Close(); closeErr != nil {
+				return false, closeErr
+			}
 			return true, nil
 		}
 		return false, err
@@ -56,7 +58,7 @@ func (t *TaskRunner) WaitForWebPageToBeReady(targetUrl string) {
 			httpClient = &http.Client{
 				Transport: &http.Transport{
 					TLSClientConfig: &tls.Config{
-						InsecureSkipVerify: true,
+						InsecureSkipVerify: true, // #nosec G402 -- readiness checks must tolerate self-signed local HTTPS endpoints
 					},
 				},
 			}
