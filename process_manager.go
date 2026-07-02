@@ -80,6 +80,7 @@ func (t *TaskRunner) ExitWithError() {
 		t.killDaemonProcessesCreateDuringThisRun()
 	}
 	t.resetCursor()
+	fmt.Printf(red+"[%s] final exit code: 1"+reset+"\n", logPrefix)
 	os.Exit(1)
 }
 
