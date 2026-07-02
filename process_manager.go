@@ -64,7 +64,7 @@ func (c *Command) startDaemon(cmd *exec.Cmd) {
 }
 
 func (t *TaskRunner) Cleanup() {
-	t.Log.Info("\ncleanup method called")
+	t.Log.Info("cleanup method called")
 	t.killDaemonProcessesCreateDuringThisRun()
 	if t.Config.CleanupFunc != nil {
 		t.Log.Info("calling custom cleanup function")

@@ -46,6 +46,14 @@ go build
 
 This approach helps you create a modern and scalable CI infrastructure.
 
+It is good practice for your CLI program to print a final success line after the root command has completed successfully:
+
+```go
+tr.Log.Info("final exit code: 0")
+```
+
+CI logs can become large, and a predictable final line makes it easy for developers to see whether the overall run succeeded. Taskrunner itself prints the matching non-zero final exit code line when it exits through `ExitWithError()`, so the failure case is already covered by taskrunner.
+
 ### Contributing
 
 Please read the [Community](https://quollix.org/docs/community/) articles for more information on how to contribute to the project and interact with others.
