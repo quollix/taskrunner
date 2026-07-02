@@ -3,6 +3,7 @@ package taskrunner
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -20,7 +21,11 @@ func (c *Command) startDaemon(cmd *exec.Cmd) {
 	}
 
 	color := c.taskRunner.nextColor()
-	c.attachOutput(cmd, c.name, color, nil)
+	consoleOutput := io.Writer(os.Stdout)
+	if c.quiet {
+		consoleOutput = io.Discard
+	}
+	c.attachOutput(cmd, c.name, color, consoleOutput, nil)
 
 	platform.SetProcessGroup(cmd)
 	err := cmd.Start()
@@ -38,17 +43,21 @@ func (c *Command) startDaemon(cmd *exec.Cmd) {
 	}
 
 	c.taskRunner.registerDaemon(cmd, c.name, color)
-	c.taskRunner.Log.Info("started daemon '%s' with ID '%v' using command '%s'", c.name, cmd.Process.Pid, formatCommand(cmd))
+	if !c.quiet {
+		c.taskRunner.Log.Info("started daemon '%s' with ID '%v' using command '%s'", c.name, cmd.Process.Pid, formatCommand(cmd))
+	}
 
 	go func() {
 		commandStr := formatCommand(cmd)
 		if err = cmd.Wait(); err != nil {
 			if err.Error() == "signal: killed" {
-				c.taskRunner.Log.Info("command: '%s' -> stopped through cleanup process killing", commandStr)
+				if !c.quiet {
+					c.taskRunner.Log.Info("command: '%s' -> stopped through cleanup process killing", commandStr)
+				}
 			} else {
 				c.taskRunner.Log.Error("command: '%s' -> stopped with error: %v", commandStr, err)
 			}
-		} else {
+		} else if !c.quiet {
 			c.taskRunner.Log.Info("command: '%s' -> stopped through termination", commandStr)
 		}
 	}()

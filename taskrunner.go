@@ -37,6 +37,7 @@ type Command struct {
 	asDaemon   bool
 	name       string
 	allowFail  bool
+	quiet      bool
 }
 
 type CommandResult struct {

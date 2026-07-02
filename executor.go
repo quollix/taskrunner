@@ -35,6 +35,11 @@ func (c *Command) AllowFail() *Command {
 	return c
 }
 
+func (c *Command) Quiet() *Command {
+	c.quiet = true
+	return c
+}
+
 func (r *CommandResult) Output() string {
 	return r.output
 }
@@ -106,10 +111,16 @@ func splitCommandArgs(commandStr string) ([]string, error) {
 func (c *Command) runForeground(cmd *exec.Cmd) *CommandResult {
 	shortDir := strings.ReplaceAll(c.dir, c.taskRunner.Config.parentDir, "")
 	commandStr := formatCommand(cmd)
-	c.taskRunner.Log.Info("in directory '%s', executing '%s'", shortDir, commandStr)
+	if !c.quiet {
+		c.taskRunner.Log.Info("in directory '%s', executing '%s'", shortDir, commandStr)
+	}
 
 	var outputBuf bytes.Buffer
-	c.attachOutput(cmd, logPrefix, green, &lockedWriter{writer: &outputBuf})
+	consoleOutput := io.Writer(os.Stdout)
+	if c.quiet {
+		consoleOutput = io.Discard
+	}
+	c.attachOutput(cmd, logPrefix, green, consoleOutput, &lockedWriter{writer: &outputBuf})
 
 	startTime := time.Now()
 	err := cmd.Run()
@@ -120,18 +131,20 @@ func (c *Command) runForeground(cmd *exec.Cmd) *CommandResult {
 	elapsedTimeSummary := fmt.Sprintf("Time taken: %s seconds.", elapsedStr)
 	if err != nil {
 		if c.allowFail {
-			c.taskRunner.Log.Info(" => Command failed in directory '%s' running '%s' but continuing because AllowFail was set. %s. Error: %v", shortDir, commandStr, elapsedTimeSummary, err)
+			if !c.quiet {
+				c.taskRunner.Log.Info(" => Command failed in directory '%s' running '%s' but continuing because AllowFail was set. %s. Error: %v", shortDir, commandStr, elapsedTimeSummary, err)
+			}
 			return result
 		}
 		c.taskRunner.Log.Error(" => Command failed in directory '%s' running '%s'. %s. Error: %v", shortDir, commandStr, elapsedTimeSummary, err)
 		c.taskRunner.ExitWithError()
-	} else {
+	} else if !c.quiet {
 		c.taskRunner.Log.Info(" => Command successful. %s", elapsedTimeSummary)
 	}
 	return result
 }
 
-func (c *Command) attachOutput(cmd *exec.Cmd, name, color string, capture io.Writer) {
+func (c *Command) attachOutput(cmd *exec.Cmd, name, color string, console io.Writer, capture io.Writer) {
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		c.taskRunner.Log.Error("failed to attach stdout pipe for '%s': %v", formatCommand(cmd), err)
@@ -145,8 +158,8 @@ func (c *Command) attachOutput(cmd *exec.Cmd, name, color string, capture io.Wri
 		return
 	}
 
-	go streamOutput(stdoutPipe, os.Stdout, capture, name, color)
-	go streamOutput(stderrPipe, os.Stderr, capture, name, color)
+	go streamOutput(stdoutPipe, console, capture, name, color)
+	go streamOutput(stderrPipe, console, capture, name, color)
 }
 
 func streamOutput(reader io.Reader, console, capture io.Writer, name, color string) {
