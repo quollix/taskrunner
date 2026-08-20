@@ -1,5 +1,5 @@
 # Taskrunner
- 
+
 Handling CI-related tasks such as building, testing, and deploying can be automated using bash scripts, but these can quickly get messy. Managing multiple processes, handling cleanup, aborting on failure, adding pretty colored output, and more can lead to complex bash code. That's why Taskrunner was created: a simple, open source library to replace bash scripts with cleaner, more maintainable code written in Go.
 
 ### Installation
@@ -12,7 +12,7 @@ go get github.com/quollix/taskrunner
 
 ```go
 
-var ( 
+var (
     backendDir = "../backend"
     frontendDir = "../frontend"
     acceptanceTestsDir = "../acceptance"
@@ -20,7 +20,7 @@ var (
 
 func TestFrontend() {
     tr := taskrunner.GetTaskRunner()
-	
+
     tr.Log.Info("Testing Integrated Components")
     defer tr.Cleanup() // shuts down the daemon processes at the end
     tr.Cmd().Dir(backendDir).Run("go build")
@@ -37,7 +37,7 @@ func TestFrontend() {
 }
 ```
 
-The idea is to write simple functions like this and build a CLI tool, e.g., by using [cobra](https://github.com/spf13/cobra), to call these functions. The final use of the CLI tool might look like this: 
+The idea is to write simple functions like this and build a CLI tool, e.g., by using [cobra](https://github.com/spf13/cobra), to call these functions. The final use of the CLI tool might look like this:
 
 ```bash
 go build
@@ -60,4 +60,4 @@ Please read the [Community](https://quollix.org/docs/community/) articles for mo
 
 ### License
 
-This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). See [LICENSE](LICENSE) for details.
+This project is licensed under the [MIT License](LICENSE).
