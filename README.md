@@ -56,7 +56,7 @@ CI logs can become large, and a predictable final line makes it easy for develop
 
 ### Contributing
 
-Please read the [Community](https://quollix.org/docs/community/) articles for more information on how to contribute to the project and interact with others.
+Please read the [Community](https://quollix.org/docs/project/community/) articles for more information on how to contribute to the project and interact with others.
 
 ### License
 
